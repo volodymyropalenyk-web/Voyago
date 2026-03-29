@@ -31,7 +31,7 @@ app.get('/api/attractions', async (req, res) => {
   try {
     const { lat, lon, lang = 'en' } = req.query;
     const wikiLang = lang === 'uk' ? 'uk' : 'en';
-    const url = `https://${wikiLang}.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=20000&gslimit=12&format=json&origin=*`;
+    const url = `https://${wikiLang}.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat}|${lon}&gsradius=10000&gslimit=12&format=json`;
     const response = await fetch(url);
     const data = await response.json();
     res.json(data?.query?.geosearch || []);
