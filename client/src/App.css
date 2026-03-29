@@ -789,13 +789,16 @@ html, body, #root {
 
 /* ── Plan Summary ──────────────────────────────────────────────────────────── */
 .summary {
-  min-height: 100vh;
-  width: 100vw;
+  position: fixed;
+  inset: 0;
   background: radial-gradient(ellipse at 70% 30%, #0d1f4a 0%, var(--bg) 60%);
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
+  z-index: 50;
+  -webkit-overflow-scrolling: touch; /* smooth scroll on iOS */
 }
 
 .summary__header {
