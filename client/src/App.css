@@ -396,6 +396,24 @@ html, body, #root {
   overflow: hidden;
 }
 
+.map-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(8, 13, 26, 0.82);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  padding: 7px 16px;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  pointer-events: none;
+  z-index: 500;
+  white-space: nowrap;
+  animation: fadeIn 0.4s ease;
+}
+
 /* ── Leaflet overrides ─────────────────────────────────────────────────────── */
 .leaflet-container {
   width: 100%;
@@ -906,22 +924,28 @@ html, body, #root {
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   /* Language */
-  .lang-cards { flex-direction: column; gap: 16px; }
-  .lang-card { padding: 20px 36px; }
+  .lang-cards { flex-direction: column; gap: 12px; }
+  .lang-card { padding: 16px 32px; }
 
   /* Welcome */
-  .welcome__title { font-size: 1.8rem; }
-  .welcome__features { gap: 8px; }
-  .welcome__feature { font-size: 0.78rem; padding: 5px 10px; }
+  .welcome__title { font-size: 1.7rem; }
+  .welcome__features { gap: 6px; }
+  .welcome__feature { font-size: 0.76rem; padding: 4px 9px; }
+  .btn--lg { padding: 12px 24px; font-size: 1rem; }
 
-  /* ── Planning layout ─────────────────────────────── */
-  /* Header is ~52px, sidebar is fixed 200px, map gets the rest */
-  :root { --mob-header: 52px; --mob-sidebar: 200px; }
+  /* ── Planning — header 48px, sidebar 158px, rest = map ── */
+  :root { --mob-header: 48px; --mob-sidebar: 158px; }
 
   .planning {
     height: 100dvh;
     height: -webkit-fill-available;
   }
+  .planning__header {
+    padding: 8px 12px;
+    min-height: var(--mob-header);
+  }
+  /* Hide logo text on very small screens, keep icon */
+  .planning__header .logo__name { display: none; }
 
   .planning__body {
     flex-direction: column;
@@ -929,46 +953,94 @@ html, body, #root {
     overflow: hidden;
   }
 
-  /* Compact sidebar strip at the top */
+  /* ── Compact sidebar ── */
   .sidebar {
     width: 100%;
     height: var(--mob-sidebar);
     flex-shrink: 0;
     border-right: none;
     border-bottom: 1px solid var(--border);
-    overflow-y: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
-  .sidebar__cities { max-height: 80px; overflow-y: auto; }
+  .sidebar__search { padding: 8px 10px; gap: 6px; }
+  .search-input { padding: 7px 10px; font-size: 0.83rem; }
+  .btn { padding: 7px 12px; font-size: 0.83rem; }
 
-  /* Map — explicit height so Leaflet can render */
+  /* City list — single compact row, scrolls horizontally */
+  .sidebar__cities {
+    padding: 6px 10px;
+    flex: 1;
+    overflow: hidden;
+  }
+  .sidebar__cities-title { font-size: 0.68rem; margin-bottom: 6px; }
+  .city-empty { font-size: 0.78rem; padding: 8px 0; }
+
+  /* Horizontal scrolling city pills */
+  .city-list-mobile {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .city-item {
+    flex-shrink: 0;
+    padding: 5px 8px;
+    gap: 6px;
+    min-width: 0;
+  }
+  .city-item__name { font-size: 0.8rem; max-width: 90px; }
+  .city-item__country { display: none; }
+  .city-item__num { width: 20px; height: 20px; font-size: 0.68rem; }
+
+  .sidebar__generate { padding: 8px 10px; }
+
+  /* ── Map — explicit pixel height for Leaflet ── */
   .planning__map {
     width: 100%;
     height: calc(100dvh - var(--mob-header) - var(--mob-sidebar));
     flex-shrink: 0;
     position: relative;
   }
-
-  /* Force Leaflet to fill its container absolutely */
   .leaflet-container {
     position: absolute !important;
     inset: 0 !important;
     width: 100% !important;
     height: 100% !important;
   }
+  .map-hint {
+    font-size: 0.72rem;
+    padding: 5px 12px;
+    bottom: 12px;
+  }
 
-  /* Modal full-width bottom sheet */
-  .modal { max-height: 90vh; border-radius: 16px 16px 0 0; }
-  .modal__tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0; }
-  .tab { white-space: nowrap; padding: 8px 12px; font-size: 0.82rem; }
+  /* ── Modal ── */
+  .modal { max-height: 88vh; border-radius: 16px 16px 0 0; }
+  .modal__header { padding: 14px 16px 0; }
+  .modal__title { font-size: 1.1rem; }
+  .modal__tabs { overflow-x: auto; flex-wrap: nowrap; padding: 10px 16px 0; gap: 2px; }
+  .modal__body { padding: 14px 16px; }
+  .tab { white-space: nowrap; padding: 7px 10px; font-size: 0.8rem; }
+  .route-stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat__value { font-size: 1.1rem; }
+  .fuel-form { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .transport-modes { gap: 6px; }
+  .transport-mode-btn { padding: 8px 6px; font-size: 0.78rem; }
+  .transport-mode-btn__icon { font-size: 1.2rem; }
+  .external-link { padding: 10px 12px; font-size: 0.85rem; }
 
-  /* Summary */
-  .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
-  .summary__content { padding: 0 16px 40px; }
-  .summary__title { font-size: 1.5rem; }
+  /* ── Summary ── */
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .summary__content { padding: 0 14px 40px; }
+  .summary__title { font-size: 1.4rem; }
+  .stat-card { padding: 14px; }
+  .stat-card__value { font-size: 1.2rem; }
+  .city-summary-card { padding: 12px 14px; gap: 10px; }
 
-  /* Transport / Weather */
-  .route-stats { grid-template-columns: repeat(2, 1fr); }
-  .weather-forecast { grid-template-columns: repeat(3, 1fr); }
-  .transport-modes { flex-wrap: wrap; }
-  .fuel-form { grid-template-columns: 1fr; }
+  /* ── Weather forecast ── */
+  .weather-forecast { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .forecast-day { padding: 10px 6px; }
+  .forecast-day__icon { font-size: 1.4rem; }
 }

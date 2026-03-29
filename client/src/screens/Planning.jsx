@@ -95,18 +95,20 @@ export default function Planning({ cities, setCities, onGeneratePlan, onBack }) 
             {cities.length === 0 ? (
               <p className="city-empty">{t('noDestinations')}</p>
             ) : (
-              cities.map((city, i) => (
-                <div key={city.id} className="city-item">
-                  <div className="city-item__num">{i + 1}</div>
-                  <div style={{ flex: 1, overflow: 'hidden' }}>
-                    <div className="city-item__name">{city.name}</div>
-                    <div className="city-item__country">{city.countryCode}</div>
+              <div className="city-list-mobile">
+                {cities.map((city, i) => (
+                  <div key={city.id} className="city-item">
+                    <div className="city-item__num">{i + 1}</div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <div className="city-item__name">{city.name}</div>
+                      <div className="city-item__country">{city.countryCode}</div>
+                    </div>
+                    <button className="city-item__remove" onClick={() => handleRemove(city.id)}>
+                      {t('remove')}
+                    </button>
                   </div>
-                  <button className="city-item__remove" onClick={() => handleRemove(city.id)}>
-                    {t('remove')}
-                  </button>
-                </div>
-              ))
+                ))}
+              </div>
             )}
           </div>
 
@@ -125,6 +127,9 @@ export default function Planning({ cities, setCities, onGeneratePlan, onBack }) 
         {/* Map */}
         <main className="planning__map">
           <WorldMap cities={cities} onMarkerClick={setSelectedCity} />
+          {cities.length > 0 && (
+            <div className="map-hint">📍 {t('tapMarkerHint')}</div>
+          )}
         </main>
       </div>
 

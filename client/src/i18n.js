@@ -17,6 +17,7 @@ export const translations = {
     yourDestinations: 'Your Destinations',
     generatePlan: 'Generate Travel Plan',
     noDestinations: 'No destinations added yet.\nSearch for a city above.',
+    tapMarkerHint: 'Tap a marker on the map for details',
     // Modal tabs
     attractions: 'Attractions',
     transport: 'Transport',
@@ -93,6 +94,7 @@ export const translations = {
     yourDestinations: 'Ваші напрямки',
     generatePlan: 'Сформувати план подорожі',
     noDestinations: 'Напрямки ще не додано.\nПошукайте місто вище.',
+    tapMarkerHint: 'Натисніть на точку на карті для детальнішої інформації',
     // Modal tabs
     attractions: "Пам'ятки",
     transport: 'Транспорт',
