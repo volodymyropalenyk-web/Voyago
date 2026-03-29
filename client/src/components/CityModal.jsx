@@ -56,22 +56,25 @@ function TransportTab({ city, cities, onUpdateCity }) {
   useEffect(() => {
     if (!prevCity) return;
     setLoadingRoute(true);
-    fetch(
-      `/api/route?from_lat=${prevCity.lat}&from_lon=${prevCity.lon}&to_lat=${city.lat}&to_lon=${city.lon}`
-    )
+    fetch(`/api/route?from_lat=${prevCity.lat}&from_lon=${prevCity.lon}&to_lat=${city.lat}&to_lon=${city.lon}`)
       .then((r) => r.json())
       .then(setRoute)
       .catch(() => setRoute(null))
       .finally(() => setLoadingRoute(false));
   }, [city.id, prevCity?.id]);
 
+  // route.drive = road data or null (cross-ocean)
+  // route.flight = straight-line data (always present)
+
   const setModeAndSave = (m) => {
     setMode(m);
     onUpdateCity({ ...city, transport: { ...city.transport, mode: m } });
   };
 
-  const fuelLiters = route ? ((parseFloat(route.distance_km) * consumption) / 100).toFixed(1) : null;
-  const fuelCost = fuelLiters ? (fuelLiters * fuelPrice).toFixed(2) : null;
+  const driveData  = route?.drive  || null;
+  const flightData = route?.flight || null;
+  const fuelLiters = driveData ? ((driveData.distance_km * consumption) / 100).toFixed(1) : null;
+  const fuelCost   = fuelLiters ? (fuelLiters * fuelPrice).toFixed(2) : null;
 
   const flixFrom = prevCity ? encodeURIComponent(prevCity.name) : '';
   const flixTo = encodeURIComponent(city.name);
@@ -106,28 +109,36 @@ function TransportTab({ city, cities, onUpdateCity }) {
             <div className="tab-loading">⏳ {t('loading')}</div>
           ) : route ? (
             <>
+              {/* Cross-ocean warning */}
+              {!driveData && (
+                <div style={{ padding: '12px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 'var(--radius)', marginBottom: 12, fontSize: '0.85rem', color: '#fca5a5' }}>
+                  ⚠️ {t('driveNotPossible')}
+                </div>
+              )}
+              {driveData && (
               <div className="info-card">
                 <div className="info-card__title">
-                  {t('routeFrom')} {prevCity.name} → {city.name}
-                  {route.estimated && <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none' }}>({t('approxRoad')})</span>}
+                  🚗 {t('routeFrom')} {prevCity.name} → {city.name}
+                  {driveData.estimated && <span style={{ color: 'var(--text3)', marginLeft: 6, textTransform: 'none' }}>({t('approxRoad')})</span>}
                 </div>
                 <div className="route-stats">
                   <div className="stat">
-                    <div className="stat__value">{route.distance_km}</div>
+                    <div className="stat__value">{driveData.distance_km}</div>
                     <div className="stat__label">{t('km')}</div>
                   </div>
                   <div className="stat">
-                    <div className="stat__value">{route.duration_h}</div>
+                    <div className="stat__value">{driveData.duration_h}</div>
                     <div className="stat__label">{t('h')}</div>
                   </div>
                   <div className="stat">
-                    <div className="stat__value">{route.duration_min}</div>
+                    <div className="stat__value">{driveData.duration_min}</div>
                     <div className="stat__label">{t('min')}</div>
                   </div>
                 </div>
               </div>
+              )}
 
-              <div className="info-card">
+              {driveData && <div className="info-card">
                 <div className="info-card__title">{t('estimatedCost')}</div>
                 <div className="fuel-form">
                   <div className="field">
@@ -165,7 +176,7 @@ function TransportTab({ city, cities, onUpdateCity }) {
                     <span className="fuel-result__value">€ {fuelCost}</span>
                   </div>
                 )}
-              </div>
+              </div>}
             </>
           ) : (
             <div className="tab-empty">{t('errorData')}</div>
@@ -224,6 +235,26 @@ function TransportTab({ city, cities, onUpdateCity }) {
       {/* PLANE */}
       {mode === 'plane' && (
         <>
+          {/* Flight distance info */}
+          {prevCity && flightData && (
+            <div className="info-card" style={{ marginBottom: 12 }}>
+              <div className="info-card__title">✈️ {t('flightDistance')} · {prevCity.name} → {city.name}</div>
+              <div className="route-stats">
+                <div className="stat">
+                  <div className="stat__value">{flightData.distance_km}</div>
+                  <div className="stat__label">{t('km')}</div>
+                </div>
+                <div className="stat">
+                  <div className="stat__value">~{flightData.duration_h}</div>
+                  <div className="stat__label">{t('h')}</div>
+                </div>
+                <div className="stat">
+                  <div className="stat__value" style={{ fontSize: '0.75rem', color: 'var(--text3)' }}>{t('estimatedFlight')}</div>
+                  <div className="stat__label"> </div>
+                </div>
+              </div>
+            </div>
+          )}
           {!prevCity && (
             <div className="departure-form">
               <input
@@ -285,7 +316,7 @@ function TransportTab({ city, cities, onUpdateCity }) {
 
 // ── Holidays Tab ───────────────────────────────────────────────────────────────
 function HolidaysTab({ city }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -300,9 +331,29 @@ function HolidaysTab({ city }) {
   }, [city.id]);
 
   if (loading) return <div className="tab-loading">⏳ {t('loading')}</div>;
-  if (!holidays.length) return <div className="tab-empty">{t('noHolidays')}</div>;
+  if (!holidays.length) return (
+    <div className="tab-empty">
+      {t('holidaysNotSupported')}
+      <br />
+      <a
+        href={`https://www.officeholidays.com/countries/${city.countryCode?.toLowerCase()}`}
+        target="_blank" rel="noopener noreferrer"
+        style={{ color: 'var(--accent)', marginTop: 8, display: 'inline-block' }}
+      >
+        officeholidays.com ↗
+      </a>
+    </div>
+  );
 
   const today = new Date().toISOString().split('T')[0];
+
+  // Pick holiday name based on UI language:
+  // Ukrainian UI + Ukrainian country → localName (Ukrainian)
+  // All other cases → name (English, universally readable)
+  const holidayName = (h) => {
+    if (lang === 'uk' && city.countryCode === 'UA') return h.localName;
+    return h.name;
+  };
 
   return (
     <div className="holiday-list">
@@ -312,10 +363,10 @@ function HolidaysTab({ city }) {
           <div key={h.date + h.name} className={`holiday-item ${upcoming ? 'holiday-item--upcoming' : ''}`}>
             <div className="holiday-item__date">{h.date}</div>
             <div className="holiday-item__name">
-              {h.localName}
-              {h.localName !== h.name && (
+              {holidayName(h)}
+              {h.localName !== h.name && lang !== 'uk' && (
                 <span style={{ color: 'var(--text3)', marginLeft: 6, fontSize: '0.8rem' }}>
-                  ({h.name})
+                  ({h.localName})
                 </span>
               )}
             </div>

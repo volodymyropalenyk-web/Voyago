@@ -45,11 +45,14 @@ app.get('/api/attractions', async (req, res) => {
 app.get('/api/holidays', async (req, res) => {
   try {
     const { countryCode, year } = req.query;
+    if (!countryCode || countryCode === 'undefined') return res.json([]);
     const url = `https://date.nager.at/api/v3/PublicHolidays/${year}/${countryCode}`;
     const response = await fetch(url);
-    if (!response.ok) return res.json([]);
-    const data = await response.json();
-    res.json(data);
+    // 204 = country not supported by Nager.Date
+    if (!response.ok || response.status === 204) return res.json([]);
+    const text = await response.text();
+    if (!text || text.trim() === '') return res.json([]);
+    res.json(JSON.parse(text));
   } catch (err) {
     console.error('Holidays error:', err);
     res.json([]);
@@ -70,38 +73,58 @@ app.get('/api/weather', async (req, res) => {
   }
 });
 
-// ── Route / Distance (OSRM with haversine fallback) ──────────────────────────
+// ── Route / Distance ──────────────────────────────────────────────────────────
+// Returns { drive, flight }
+// drive = OSRM road route (null if cross-ocean / not possible)
+// flight = great-circle straight line (always present)
 app.get('/api/route', async (req, res) => {
   try {
     const { from_lon, from_lat, to_lon, to_lat } = req.query;
-    const url = `https://router.project-osrm.org/route/v1/driving/${from_lon},${from_lat};${to_lon},${to_lat}?overview=false`;
-    const response = await fetch(url);
-    const data = await response.json();
 
-    if (data.routes && data.routes[0]) {
-      const r = data.routes[0];
-      return res.json({
-        distance_km: (r.distance / 1000).toFixed(1),
-        duration_min: Math.round(r.duration / 60),
-        duration_h: (r.duration / 3600).toFixed(1),
-        estimated: false
-      });
-    }
-
-    // Haversine fallback for overseas routes
+    // Great-circle (straight-line) distance
     const R = 6371;
     const lat1 = parseFloat(from_lat) * Math.PI / 180;
-    const lat2 = parseFloat(to_lat) * Math.PI / 180;
-    const dLat = (parseFloat(to_lat) - parseFloat(from_lat)) * Math.PI / 180;
-    const dLon = (parseFloat(to_lon) - parseFloat(from_lon)) * Math.PI / 180;
+    const lat2 = parseFloat(to_lat)   * Math.PI / 180;
+    const dLat = (parseFloat(to_lat)  - parseFloat(from_lat)) * Math.PI / 180;
+    const dLon = (parseFloat(to_lon)  - parseFloat(from_lon)) * Math.PI / 180;
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
-    const dist = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    res.json({
-      distance_km: (dist * 1.25).toFixed(1),
-      duration_min: Math.round(dist * 1.25 / 80 * 60),
-      duration_h: (dist * 1.25 / 80).toFixed(1),
-      estimated: true
-    });
+    const straight = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    const flight = {
+      distance_km: Math.round(straight),
+      duration_h:  parseFloat((straight / 850).toFixed(1)),
+      duration_min: Math.round(straight / 850 * 60),
+    };
+
+    // Try OSRM driving (5 s timeout)
+    let drive = null;
+    try {
+      const url = `https://router.project-osrm.org/route/v1/driving/${from_lon},${from_lat};${to_lon},${to_lat}?overview=false`;
+      const resp = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      const data = await resp.json();
+      if (data.routes?.[0]) {
+        const r = data.routes[0];
+        drive = {
+          distance_km: parseFloat((r.distance / 1000).toFixed(1)),
+          duration_h:  parseFloat((r.duration / 3600).toFixed(1)),
+          duration_min: Math.round(r.duration / 60),
+          estimated: false,
+        };
+      }
+    } catch { /* OSRM unavailable or cross-ocean — drive stays null */ }
+
+    // Short-distance driving estimate when OSRM fails (≤800 km straight)
+    if (!drive && straight <= 800) {
+      const road = straight * 1.3;
+      drive = {
+        distance_km: parseFloat(road.toFixed(1)),
+        duration_h:  parseFloat((road / 80).toFixed(1)),
+        duration_min: Math.round(road / 80 * 60),
+        estimated: true,
+      };
+    }
+
+    res.json({ drive, flight });
   } catch (err) {
     console.error('Route error:', err);
     res.status(500).json({ error: 'Route calculation failed' });

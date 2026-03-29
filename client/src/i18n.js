@@ -45,6 +45,10 @@ export const translations = {
     // Holidays
     upcomingHolidays: 'Public Holidays',
     noHolidays: 'No public holiday data available for this country.',
+    holidaysNotSupported: 'Holiday data not available for this country yet.',
+    driveNotPossible: 'Driving route not available — cities are separated by ocean. Choose ✈️ Plane.',
+    flightDistance: 'Flight distance (straight line)',
+    estimatedFlight: 'estimated flight time',
     // Weather
     currentWeather: 'Current Weather',
     forecast: '3-Day Forecast',
@@ -117,6 +121,10 @@ export const translations = {
     // Holidays
     upcomingHolidays: 'Державні свята',
     noHolidays: 'Дані про свята для цієї країни відсутні.',
+    holidaysNotSupported: 'Дані про свята для цієї країни поки недоступні.',
+    driveNotPossible: 'Маршрут на авто неможливий — міста розділені океаном. Оберіть ✈️ Літак.',
+    flightDistance: 'Відстань польоту (пряма)',
+    estimatedFlight: 'орієнтовний час польоту',
     // Weather
     currentWeather: 'Поточна погода',
     forecast: 'Прогноз на 3 дні',

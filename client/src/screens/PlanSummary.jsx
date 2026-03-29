@@ -12,15 +12,25 @@ export default function PlanSummary({ cities, onBack, onNewPlan }) {
       const segments = [];
       for (let i = 1; i < cities.length; i++) {
         const from = cities[i - 1];
-        const to = cities[i];
+        const to   = cities[i];
+        const transportMode = to.transport?.mode || 'plane';
         try {
-          const res = await fetch(
-            `/api/route?from_lat=${from.lat}&from_lon=${from.lon}&to_lat=${to.lat}&to_lon=${to.lon}`
-          );
+          const res  = await fetch(`/api/route?from_lat=${from.lat}&from_lon=${from.lon}&to_lat=${to.lat}&to_lon=${to.lon}`);
           const data = await res.json();
-          segments.push({ from: from.name, to: to.name, ...data });
+          // Use road distance for car/bus, flight distance for plane
+          const useFlight = transportMode === 'plane' || !data.drive;
+          const seg = useFlight ? data.flight : data.drive;
+          segments.push({
+            from: from.name,
+            to:   to.name,
+            mode: transportMode,
+            distance_km: seg?.distance_km ?? '?',
+            duration_h:  seg?.duration_h  ?? '?',
+            estimated:   seg?.estimated   ?? true,
+            canDrive:    !!data.drive,
+          });
         } catch {
-          segments.push({ from: from.name, to: to.name, distance_km: '?', duration_h: '?' });
+          segments.push({ from: from.name, to: to.name, mode: transportMode, distance_km: '?', duration_h: '?' });
         }
       }
       setRoutes(segments);
@@ -43,11 +53,14 @@ export default function PlanSummary({ cities, onBack, onNewPlan }) {
   }, [cities]);
 
   const totalKm = routes.reduce((sum, r) => sum + (parseFloat(r.distance_km) || 0), 0);
-  const totalH = routes.reduce((sum, r) => sum + (parseFloat(r.duration_h) || 0), 0);
-  const fuelPrice = cities[0]?.transport?.fuelPrice || 1.7;
-  const consumption = cities[0]?.transport?.consumption || 8;
-  const totalFuel = ((totalKm * consumption) / 100).toFixed(1);
-  const totalFuelCost = ((totalKm * consumption * fuelPrice) / 100).toFixed(0);
+  const totalH  = routes.reduce((sum, r) => sum + (parseFloat(r.duration_h)  || 0), 0);
+
+  // Fuel cost only for car segments
+  const carSegments = routes.filter((r) => r.mode === 'car' && r.canDrive !== false);
+  const carKm = carSegments.reduce((sum, r) => sum + (parseFloat(r.distance_km) || 0), 0);
+  const fuelPrice   = cities.find((c) => c.transport?.mode === 'car')?.transport?.fuelPrice   || 1.7;
+  const consumption = cities.find((c) => c.transport?.mode === 'car')?.transport?.consumption || 8;
+  const totalFuelCost = carKm > 0 ? ((carKm * consumption * fuelPrice) / 100).toFixed(0) : null;
 
   return (
     <div className="summary">
@@ -87,7 +100,7 @@ export default function PlanSummary({ cities, onBack, onNewPlan }) {
           </div>
           <div className="stat-card">
             <div className="stat-card__icon">⛽</div>
-            <div className="stat-card__value">~€{totalFuelCost}</div>
+            <div className="stat-card__value">{totalFuelCost ? `~€${totalFuelCost}` : '—'}</div>
             <div className="stat-card__label">{t('totalFuelCost')}</div>
           </div>
         </div>
@@ -103,7 +116,8 @@ export default function PlanSummary({ cities, onBack, onNewPlan }) {
                   <div className="city-summary-card__info">
                     <div className="city-summary-card__name">{r.from} → {r.to}</div>
                     <div className="city-summary-card__meta">
-                      📏 {r.distance_km} {t('km')} &nbsp;·&nbsp; ⏱️ {r.duration_h} {t('h')}
+                      {r.mode === 'car' ? '🚗' : r.mode === 'bus' ? '🚌' : '✈️'}
+                      {' '}{r.distance_km} {t('km')} &nbsp;·&nbsp; ⏱️ {r.duration_h} {t('h')}
                       {r.estimated && <span style={{ color: 'var(--text3)', marginLeft: 6 }}>({t('estimated')})</span>}
                     </div>
                   </div>
