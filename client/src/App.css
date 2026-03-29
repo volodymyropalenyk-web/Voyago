@@ -914,48 +914,51 @@ html, body, #root {
   .welcome__features { gap: 8px; }
   .welcome__feature { font-size: 0.78rem; padding: 5px 10px; }
 
-  /* Planning — stack sidebar above map */
+  /* ── Planning layout ─────────────────────────────── */
+  /* Header is ~52px, sidebar is fixed 200px, map gets the rest */
+  :root { --mob-header: 52px; --mob-sidebar: 200px; }
+
   .planning {
     height: 100dvh;
     height: -webkit-fill-available;
   }
+
   .planning__body {
     flex-direction: column;
+    height: calc(100dvh - var(--mob-header));
     overflow: hidden;
-    height: calc(100% - 52px); /* subtract header */
   }
 
-  /* Sidebar becomes a compact top strip */
+  /* Compact sidebar strip at the top */
   .sidebar {
     width: 100%;
-    height: auto;
-    max-height: 50vh;
+    height: var(--mob-sidebar);
+    flex-shrink: 0;
     border-right: none;
     border-bottom: 1px solid var(--border);
     overflow-y: auto;
-    flex-shrink: 0;
   }
-  .sidebar__cities {
-    max-height: 120px;
-    overflow-y: auto;
+  .sidebar__cities { max-height: 80px; overflow-y: auto; }
+
+  /* Map — explicit height so Leaflet can render */
+  .planning__map {
+    width: 100%;
+    height: calc(100dvh - var(--mob-header) - var(--mob-sidebar));
+    flex-shrink: 0;
+    position: relative;
   }
 
-  /* Map fills the remaining space */
-  .planning__map {
-    flex: 1;
-    min-height: 200px;
+  /* Force Leaflet to fill its container absolutely */
+  .leaflet-container {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
   }
 
   /* Modal full-width bottom sheet */
-  .modal {
-    max-height: 90vh;
-    border-radius: 16px 16px 0 0;
-  }
-  .modal__tabs {
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    padding-bottom: 0;
-  }
+  .modal { max-height: 90vh; border-radius: 16px 16px 0 0; }
+  .modal__tabs { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0; }
   .tab { white-space: nowrap; padding: 8px 12px; font-size: 0.82rem; }
 
   /* Summary */
